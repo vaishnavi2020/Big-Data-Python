@@ -10,8 +10,8 @@ WORKDIR /app
 
 # Install dependencies
 COPY requirements.txt .
-RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
+RUN pip install --upgrade pip
 
 # Copy project files
 COPY . /app/
