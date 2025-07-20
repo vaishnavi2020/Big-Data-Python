@@ -16,5 +16,5 @@ RUN pip install -r requirements.txt
 # Copy project files
 COPY . /app/
 
-# Run the application
+# Run the applicationgti
 CMD ["python", "app.py"]
