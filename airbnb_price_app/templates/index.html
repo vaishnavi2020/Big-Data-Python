@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Airbnb Price Prediction</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    body { font-family: sans-serif; margin: 20px; }
+    #map { height: 500px; margin-top: 20px; }
+    label { display: inline-block; margin-right: 10px; }
+  </style>
+</head>
+<body>
+  <h1>Airbnb Price Prediction</h1>
+  <form id="predictForm">
+    <label>Minimum Nights: <input type="number" name="minimum_nights" value="3"></label>
+    <label>Reviews: <input type="number" name="number_of_reviews" value="10"></label>
+    <label>Reviews/month: <input type="number" name="reviews_per_month" value="1.5" step="0.1"></label>
+    <label>Room Type:
+      <select name="room_type">
+        <option>Entire home/apt</option>
+        <option>Private room</option>
+        <option>Shared room</option>
+      </select>
+    </label>
+    <label>Neighborhood:
+      <select name="neighbourhood" id="neighbourhoodSelect"></select>
+    </label>
+    <button type="submit" id="predictBtn" disabled>Predict</button>
+  </form>
+
+  <p><strong>Predicted Price:</strong> <span id="result">N/A</span></p>
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet"></script>
+  <script>
+    const map = L.map('map').setView([47.4979, 19.0402], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+    let geoLayer, listingsLayer, marker;
+
+    // Load GeoJSON for map
+    fetch('/api/geojson')
+      .then(res => res.json())
+      .then(data => {
+        geoLayer = L.geoJSON(data, {
+          onEachFeature: (feature, layer) => {
+            const name = feature.properties.name;
+            if (name && name !== 'Unknown') {
+              layer.bindPopup(name);
+              layer.options.fillColor = "#cccccc";
+              layer.options.fillOpacity = 0.3;
+            }
+          }
+        }).addTo(map);
+      });
+
+    // Populate neighbourhood dropdown from /api/neighbourhoods
+    fetch('/api/neighbourhoods')
+      .then(res => res.json())
+      .then(list => {
+        const select = document.getElementById("neighbourhoodSelect");
+        list.forEach(name => {
+          const option = document.createElement("option");
+          option.value = name;
+          option.text = name;
+          select.appendChild(option);
+        });
+        if (list.length > 0) {
+          document.getElementById("predictBtn").disabled = false;
+        }
+      });
+
+    // Load listings as circle markers
+    fetch('/api/listings')
+      .then(res => res.json())
+      .then(data => {
+        listingsLayer = L.layerGroup();
+        data.forEach(d => {
+          L.circleMarker([d.latitude, d.longitude], {
+            radius: 5,
+            color: priceColor(d.price)
+          })
+          .bindPopup(`€${d.price}<br>${d.room_type}`)
+          .addTo(listingsLayer);
+        });
+        listingsLayer.addTo(map);
+      });
+
+    function priceColor(price) {
+      if (price < 50) return 'green';
+      if (price < 150) return 'orange';
+      return 'red';
+    }
+
+    // Form submission
+    document.getElementById('predictForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const form = e.target;
+      const data = {
+        minimum_nights: +form.minimum_nights.value,
+        number_of_reviews: +form.number_of_reviews.value,
+        reviews_per_month: +form.reviews_per_month.value,
+        room_type: form.room_type.value,
+        neighbourhood: form.neighbourhood.value
+      };
+
+      const res = await fetch('/api/predict_price', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      const result = await res.json();
+      document.getElementById('result').textContent = `€${result.predicted_price}`;
+
+      // Highlight predicted neighborhood and show marker at centroid
+      if (!geoLayer) {
+        alert('Map not loaded yet! Please wait for the map to finish loading.');
+        return;
+      }
+      // Helper to normalize names (remove accents, lowercase, trim)
+      function normalize(s) {
+        return s ? s.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim() : '';
+      }
+      let found = false;
+      const target = normalize(result.neighbourhood);
+      // Print all normalized neighbourhoods from dropdown and GeoJSON
+      const dropdownNames = Array.from(document.getElementById('neighbourhoodSelect').options).map(opt => normalize(opt.value));
+      const geoNames = [];
+      geoLayer.eachLayer(layer => {
+        geoNames.push(normalize(layer.feature.properties.name));
+      });
+      console.log('Dropdown normalized names:', dropdownNames);
+      console.log('GeoJSON normalized names:', geoNames);
+      console.log('Target normalized:', target);
+
+      geoLayer.eachLayer(layer => {
+        const geoName = normalize(layer.feature.properties.name);
+        const isSelected = geoName === target;
+        layer.setStyle({
+          fillColor: isSelected ? 'yellow' : '#cccccc',
+          fillOpacity: isSelected ? 0.7 : 0.3
+        });
+        if (isSelected) {
+          found = true;
+          // Get centroid of the neighbourhood polygon
+          let latlng;
+          if (layer.getBounds) {
+            latlng = layer.getBounds().getCenter();
+          } else if (layer.getLatLng) {
+            latlng = layer.getLatLng();
+          }
+          console.log('Centroid for', result.neighbourhood, ':', latlng);
+          if (latlng) {
+            if (marker) map.removeLayer(marker);
+            marker = L.marker(latlng).addTo(map)
+              .bindPopup(`${result.neighbourhood}<br>Center: [${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}]`).openPopup();
+            map.setView(latlng, 14);
+          } else {
+            map.fitBounds(layer.getBounds());
+          }
+        }
+      });
+      if (!found) {
+        alert('Neighbourhood not found in map data!');
+      }
+    });
+  </script>
+</body>
+</html>
