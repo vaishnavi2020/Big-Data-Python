@@ -1,17 +1,22 @@
 from flask import Flask, render_template, request, jsonify, send_file
 import pickle
 import pandas as pd
+import numpy as np
 import os
 import json
 
 app = Flask(__name__)
 
-# Load model and feature list
+# Load model and feature list once on startup
 with open(os.path.join('model', 'best_model.pkl'), 'rb') as f:
     model = pickle.load(f)
 
 with open(os.path.join('model', 'model_features.pkl'), 'rb') as f:
     model_features = pickle.load(f)
+
+# Load and preprocess dataset once (to avoid reloading on every request)
+df = pd.read_csv('merged_data.csv')
+df['price'] = df['price'].replace(r'[\$,]', '', regex=True).astype(float)
 
 @app.route('/')
 def index():
@@ -22,30 +27,50 @@ def predict_price():
     try:
         data = request.get_json()
 
-        # Base numeric inputs
-        input_data = {
-            'minimum_nights': int(data['minimum_nights']),
-            'number_of_reviews': int(data['number_of_reviews']),
-            'reviews_per_month': float(data['reviews_per_month']),
+        # Parse and convert inputs
+        neighbourhood = data['neighbourhood']
+        room_type = data['room_type']
+        minimum_nights = int(data['minimum_nights'])
+        number_of_reviews = int(data['number_of_reviews'])
+        reviews_per_month = float(data['reviews_per_month'])
+
+        # Filter similar listings with loose criteria
+        filtered = df[
+            (df['neighbourhood_cleansed'] == neighbourhood) &
+            (df['room_type'] == room_type) &
+            (df['minimum_nights'].between(minimum_nights - 1, minimum_nights + 1)) &
+            (df['number_of_reviews'].between(number_of_reviews - 2, number_of_reviews + 2)) &
+            (df['reviews_per_month'].between(reviews_per_month - 1, reviews_per_month + 1))
+        ]
+
+        actual_avg_price = filtered['price'].mean() if len(filtered) > 0 else None
+
+        # Prepare input dictionary with one-hot encoding for categorical variables
+        input_dict = {
+            'minimum_nights': minimum_nights,
+            'number_of_reviews': number_of_reviews,
+            'reviews_per_month': reviews_per_month,
+            **{f"room_type_{room_type}": 1},
+            **{f"neighbourhood_cleansed_{neighbourhood}": 1},
         }
 
-        # Add room_type one-hot if available in features
-        room_col = f"room_type_{data['room_type']}"
-        if room_col in model_features:
-            input_data[room_col] = 1
+        # Fill zero for other features expected by the model
+        for feat in model_features:
+            if feat not in input_dict:
+                input_dict[feat] = 0
 
-        # Add neighbourhood one-hot if available in features
-        nbh_col = f"neighbourhood_cleansed_{data['neighbourhood']}"
-        if nbh_col in model_features:
-            input_data[nbh_col] = 1
+        # Create input DataFrame with columns in the right order
+        input_df = pd.DataFrame([input_dict], columns=model_features)
 
-        # Create complete input DataFrame
-        input_df = pd.DataFrame([input_data], columns=model_features).fillna(0)
+        # Predict log(price)
+        log_pred = model.predict(input_df)[0]
+        predicted_price = np.expm1(log_pred)  # revert log1p
 
-        prediction = model.predict(input_df)[0]
         return jsonify({
-            'predicted_price': round(prediction, 2),
-            'neighbourhood': data['neighbourhood']
+            'actual_avg_price': round(actual_avg_price, 2) if actual_avg_price else None,
+            'log_predicted_price': round(log_pred, 4),
+            'predicted_price': round(predicted_price, 2),
+            'neighbourhood': neighbourhood
         })
 
     except Exception as e:
@@ -60,7 +85,6 @@ def get_neighbourhoods():
     import unicodedata
     # Extract valid neighbourhoods from model features
     def normalize(s):
-        # Remove accents, lowercase, strip spaces
         return unicodedata.normalize('NFKD', s).encode('ascii', 'ignore').decode('utf-8').lower().strip()
     nbhs = [f.split("neighbourhood_cleansed_")[1] for f in model_features if f.startswith("neighbourhood_cleansed_")]
     nbhs_norm = list({normalize(n): n for n in nbhs}.values())  # unique normalized
@@ -71,7 +95,6 @@ def get_listings():
     import math
     with open('static/listings.json', 'r', encoding='utf-8') as f:
         listings = json.load(f)
-        # Filter out listings with invalid price
         filtered = [d for d in listings if 'price' in d and isinstance(d['price'], (int, float)) and not math.isnan(d['price'])]
     return jsonify(filtered)
 
