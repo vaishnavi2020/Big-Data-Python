@@ -1,5 +1,5 @@
-Flask==2.3.3
-gunicorn
+flask
 pandas
 numpy
 scikit-learn
+gunicorn
