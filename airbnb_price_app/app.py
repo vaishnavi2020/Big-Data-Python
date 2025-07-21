@@ -98,5 +98,5 @@ def get_listings():
         filtered = [d for d in listings if 'price' in d and isinstance(d['price'], (int, float)) and not math.isnan(d['price'])]
     return jsonify(filtered)
 
-if __name__ == "__main__":
-    app.run(debug=True)
+if __name__ == '__main__':
+    app.run(host="0.0.0.0", port=5000, debug=True)
