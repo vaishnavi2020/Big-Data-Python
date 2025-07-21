@@ -4,12 +4,12 @@ FROM python:3.9-slim
 # Set working directory inside container to app folder
 WORKDIR /app/airbnb_price_app
 
-# Copy requirements.txt if you have it in root (optional)
-COPY airbnb_price_app/requirements.txt /app/
-RUN pip install -r /app/requirements.txt
+# Upgrade pip first
 RUN pip install --upgrade pip
 
-
+# Copy requirements.txt and install dependencies
+COPY airbnb_price_app/requirements.txt /app/requirements.txt
+RUN pip install -r /app/requirements.txt
 
 # Copy all contents from airbnb_price_app into working directory
 COPY airbnb_price_app/. /app/airbnb_price_app/
