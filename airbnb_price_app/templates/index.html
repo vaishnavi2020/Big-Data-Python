@@ -15,160 +15,181 @@
       background: #f5f7fa;
       color: #333;
       margin: 0;
-      padding: 2rem 1rem;
+      padding: 1.5rem 1rem;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
-      min-height: 100vh;
     }
     h1 {
       font-weight: 700;
-      margin-bottom: 1rem;
+      margin-bottom: 1.5rem;
       color: #222;
       text-align: center;
-      background: #a3c2f2;
+      background: #4a90e2;
+      color: white;
       width: 100%;
-      padding: 28px;
-      font: 900 1.4rem / 1.22 "Muli", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      padding: 1.5rem 0;
+      font-size: 1.8rem;
+      letter-spacing: 1.2px;
+      box-shadow: 0 4px 10px rgba(74,144,226,0.3);
     }
-    /* Container for form + result */
+    .main-content {
+      display: flex;
+      gap: 2rem;
+      max-width: 1200px;
+      width: 100%;
+      padding: 1rem;
+    }
     .container {
       background: #fff;
       padding: 2rem;
-      border-radius: 10px;
+      border-radius: 12px;
       box-shadow: 0 6px 15px rgba(0,0,0,0.1);
-      max-width: 700px;
-      width: 100%;
-      position: relative;
-      right: 29rem;
-      top: 3rem;
+      flex: 1 1 400px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      max-height: 720px;
     }
     form {
-      display: flex;
-      gap: -5rem 2rem;
-      align-items: stretch;
-      justify-content: space-evenly;
-      flex-direction: column;
-      align-content: stretch;
+      display: grid;
+      grid-template-columns: repeat(auto-fill,minmax(200px,1fr));
+      gap: 1.5rem 2rem;
+      align-items: flex-start;
     }
     label {
-      flex: 1 1 100px;
       display: flex;
       flex-direction: column;
       font-weight: 600;
       color: #555;
-      font-family: "Muli", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 0.95rem;
     }
     input[type="number"],
     select {
-      margin-top: 0.3rem;
-      padding: 0.5rem 0.75rem;
+      margin-top: 0.4rem;
+      padding: 0.6rem 0.75rem;
       font-size: 1rem;
-      border: 1px solid #ccc;
+      border: 1.5px solid #ccc;
       border-radius: 6px;
-      transition: border-color 0.3s ease;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
     }
     input[type="number"]:focus,
     select:focus {
-      border-color:  #a3c2f2;
+      border-color: #4a90e2;
       outline: none;
-      box-shadow: 0 0 4px rgba(215, 4, 102, 0.5);
+      box-shadow: 0 0 8px rgba(74,144,226,0.4);
     }
     button {
-        width: 100%;
-        background-color: #0078d7;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        padding: 0.75rem 16.5rem;
-        cursor: pointer;
-        min-width: 120px;
-        transition: background-color 0.3s ease;
-        align-self: flex-end;
-        margin-top: 1.5rem;
-        padding: 13px;
-        font: 800 1.4rem / 1.22 "Muli", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      grid-column: 1 / -1;
+      background-color: #4a90e2;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 1rem 0;
+      font-weight: 700;
+      font-size: 1.25rem;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      margin-top: 1rem;
+      box-shadow: 0 4px 8px rgba(74,144,226,0.3);
+      user-select: none;
     }
     button:disabled {
       background-color: #a3c2f2;
       cursor: not-allowed;
+      box-shadow: none;
     }
-    button:not(:disabled):hover {
-      background-color: #a3c2f2;
+    button:not(:disabled):hover,
+    button:not(:disabled):focus {
+      background-color: #357ABD;
+      box-shadow: 0 6px 14px rgba(53,122,189,0.6);
+      outline: none;
     }
-    /* Result */
     #resultContainer {
-      margin-top: 1.5rem;
-      font-size: 1.25rem;
+      margin-top: 2rem;
+      font-size: 1.5rem;
       font-weight: 700;
-      color: #0078d7;
-      min-height: 2rem;
+      color: #4a90e2;
+      min-height: 2.5rem;
       text-align: center;
     }
-    /* Map */
     #map {
-      /* margin-top: 2rem; */
-      height: 712px;;
-      width: 100%;
-      max-width: 900px;
+      flex: 1 1 600px;
+      height: 720px;
       border-radius: 12px;
       box-shadow: 0 6px 18px rgba(0,0,0,0.12);
       border: 1px solid #ddd;
-      top: -40.7rem;
-      left: 23rem;
     }
+
     /* Responsive */
-    @media (max-width: 600px) {
-      form {
+    @media (max-width: 900px) {
+      .main-content {
         flex-direction: column;
+        align-items: center;
       }
-      label {
+      .container, #map {
+        max-width: 100%;
         width: 100%;
+        height: 500px;
+      }
+      #map {
+        margin-top: 2rem;
+      }
+    }
+    @media (max-width: 400px) {
+      input[type="number"], select {
+        font-size: 0.9rem;
       }
       button {
-        width: 100%;
+        font-size: 1.1rem;
+        padding: 0.85rem 0;
       }
     }
   </style>
 </head>
-  <h1>Airbnb Price Prediction — Budapest</h1>
 <body>
-  <div class="container">
-    <form id="predictForm" aria-label="Airbnb Price Prediction Form">
-      <label for="minimum_nights">Minimum Nights
-        <input type="number" id="minimum_nights" name="minimum_nights" min="1" value="3" required />
-      </label>
+  <h1>Airbnb Price Prediction — Budapest</h1>
+  <div class="main-content">
+    <div class="container" role="region" aria-labelledby="formTitle">
+      <form id="predictForm" aria-label="Airbnb Price Prediction Form">
+        <label for="minimum_nights">Minimum Nights
+          <input type="number" id="minimum_nights" name="minimum_nights" min="1" value="3" required />
+        </label>
 
-      <label for="number_of_reviews">Number of Reviews
-        <input type="number" id="number_of_reviews" name="number_of_reviews" min="0" value="10" required />
-      </label>
+        <label for="number_of_reviews">Number of Reviews
+          <input type="number" id="number_of_reviews" name="number_of_reviews" min="0" value="10" required />
+        </label>
 
-      <label for="reviews_per_month">Reviews per Month
-        <input type="number" id="reviews_per_month" name="reviews_per_month" step="0.1" min="0" value="1.5" required />
-      </label>
+        <label for="reviews_per_month">Reviews per Month
+          <input type="number" id="reviews_per_month" name="reviews_per_month" step="0.1" min="0" value="1.5" required />
+        </label>
 
-      <label for="room_type">Room Type
-        <select id="room_type" name="room_type" required>
-          <option>Entire home/apt</option>
-          <option>Private room</option>
-          <option>Shared room</option>
-        </select>
-      </label>
+        <label for="room_type">Room Type
+          <select id="room_type" name="room_type" required>
+            <option>Entire home/apt</option>
+            <option>Private room</option>
+            <option>Shared room</option>
+          </select>
+        </label>
 
-      <label for="neighbourhoodSelect">Neighborhood
-        <select id="neighbourhoodSelect" name="neighbourhood" required aria-describedby="neighbourhoodHelp"></select>
-        <small id="neighbourhoodHelp" style="color:#666; font-size:0.8rem; margin-top:0.25rem; display:block;">Select a Budapest neighborhood</small>
-      </label>
+        <label for="neighbourhoodSelect">Neighborhood
+          <select id="neighbourhoodSelect" name="neighbourhood" required aria-describedby="neighbourhoodHelp"></select>
+          <small id="neighbourhoodHelp" style="color:#666; font-size:0.8rem; margin-top:0.25rem; display:block;">
+            Select a Budapest neighborhood
+          </small>
+        </label>
 
-      <button type="submit" id="predictBtn" disabled>Predict Price</button>
-    </form>
+        <button type="submit" id="predictBtn" disabled>Predict Price</button>
+      </form>
 
-    <div id="resultContainer" aria-live="polite" role="status">
-      Predicted Price: <span id="result">N/A</span>
+      <div id="resultContainer" aria-live="polite" role="status">
+        Predicted Price: <span id="result">N/A</span>
+      </div>
     </div>
-  </div>
 
-  <div id="map" role="region" aria-label="Map of Budapest neighborhoods"></div>
+    <div id="map" role="region" aria-label="Map of Budapest neighborhoods"></div>
+  </div>
 
   <script src="https://unpkg.com/leaflet"></script>
   <script>
